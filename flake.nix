@@ -22,16 +22,20 @@
       {
       devShell = eachSystem (system:
         with import nixpkgs { inherit system; };
-        mkShell {
+        mkShell rec {
           nativeBuildInputs = [
-            (toolchain system "x86_64-unknown-linux-musl")
-            gh
+            (toolchain system "aarch64-unknown-linux-musl")
             yaml-language-server
+            pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc
           ];
+
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER =
+            let cc = pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc;
+            in "${cc}/bin/${cc.targetPrefix}cc";
+          CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
+          TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
         }
       );
-
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
 
       packages = eachSystem (system:
         {
