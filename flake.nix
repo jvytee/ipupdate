@@ -60,8 +60,23 @@
                 cargoLock.lockFile = ./Cargo.lock;
               };
 
+          ipupd-x86_64 =
+            with import nixpkgs { localSystem = system; crossSystem = { system = "x86_64-unknown-linux-musl"; isStatic = true; }; };
+            let
+              toolchain =
+                with fenix.packages.${system};
+                combine [ stable.cargo stable.rustc targets.x86_64-unknown-linux-musl.stable.rust-std ];
+              rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
+            in
+              rustPlatform.buildRustPackage {
+                pname = "ipupd";
+                version = "0.3.0";
+                src = self;
+                cargoLock.lockFile = ./Cargo.lock;
+              };
+
           ipupd-aarch64 =
-            with import nixpkgs { localSystem = system; crossSystem = { system = "aarch64-unknown-linux-musl"; rust.rustcTarget = "aarch64-unknown-linux-musl"; isStatic = true; }; };
+            with import nixpkgs { localSystem = system; crossSystem = { system = "aarch64-unknown-linux-musl"; isStatic = true; }; };
             let
               toolchain =
                 with fenix.packages.${system};
@@ -69,21 +84,10 @@
               rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
             in
               rustPlatform.buildRustPackage {
-                pname = "ipupd-aarch64";
+                pname = "ipupd";
                 version = "0.3.0";
                 src = self;
                 cargoLock.lockFile = ./Cargo.lock;
-
-                # nativeBuildInputs = [ pkgsStatic.stdenv.cc ];
-                env =
-                  let 
-                    cc = pkgsStatic.stdenv.cc;
-                    ccPath = "${cc}/bin/${cc.targetPrefix}cc";
-                  in {
-                    # CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER = ccPath;
-                    # CARGO_BUILD_RUSTFLAGS = "-C target-feature=+crt-static";
-                    TARGET_CC = ccPath;
-                  };
               };
         }
       );
