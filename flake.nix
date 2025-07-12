@@ -19,7 +19,7 @@
         "x86_64-unknown-linux-musl"
       ];
     in {
-      devShell = 
+      devShells = 
         let
           extraRustStds = system: targets: map (target: fenix.packages.${system}.targets.${target}.stable.rust-std) targets;
           toolchain = system: targets:
@@ -28,18 +28,25 @@
             ] ++ (extraRustStds system targets));
         in 
           eachSystem (system:
-            with import nixpkgs { inherit system; }; mkShell rec {
-              nativeBuildInputs = [
-                (toolchain system crossTargets)
-                yaml-language-server
-                pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc
-              ];
+            {
+              default = 
+                with import nixpkgs { inherit system; }; mkShell {
+                  nativeBuildInputs = [
+                    (toolchain system crossTargets)
+                    yaml-language-server
+                    pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc
+                    pkgsStatic.stdenv.cc
+                  ];
 
-              CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER =
-                let cc = pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc;
-                in "${cc}/bin/${cc.targetPrefix}cc";
-              CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
-              TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
+                  CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER =
+                    let cc = pkgsStatic.stdenv.cc;
+                    in "${cc}/bin/${cc.targetPrefix}cc";
+                  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER =
+                    let cc = pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc;
+                    in "${cc}/bin/${cc.targetPrefix}cc";
+                  # CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
+                  # TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
+                };
             }
           );
 
