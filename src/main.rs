@@ -8,7 +8,7 @@ use ipaddrs::IpAddrs;
 use std::{collections::HashSet, env, net::IpAddr, process};
 use ureq::Request;
 
-const DEFAULT_CONFIG: &str = "/etc/ipupd/config.toml";
+const DEFAULT_CONFIG: &str = "/etc/ipupdate/config.toml";
 
 fn main() {
     env_logger::init();

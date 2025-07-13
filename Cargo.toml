@@ -1,5 +1,5 @@
 [package]
-name = "ipupd"
+name = "ipupdate"
 version = "0.3.0"
 authors = ["jvytee <jvytee@posteo.org"]
 edition = "2024"

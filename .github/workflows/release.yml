@@ -37,23 +37,23 @@ jobs:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build static binary for x86_64
-        run: nix build .#ipupd-x86_64
+        run: nix build .#ipupdate-x86_64
 
       - name: Upload x86_64 binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ipupd-x86_64
-          path: ${{ github.workspace }}/result/bin/ipupd
+          name: ipupdate-x86_64
+          path: ${{ github.workspace }}/result/bin/ipupdate
           if-no-files-found: error
 
       - name: Build static binary for aarch64
-        run: nix build .#ipupd-aarch64
+        run: nix build .#ipupdate-aarch64
 
       - name: Upload aarch64 binary artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ipupd-aarch64
-          path: ${{ github.workspace }}/result/bin/ipupd
+          name: ipupdate-aarch64
+          path: ${{ github.workspace }}/result/bin/ipupdate
           if-no-files-found: error
 
   release:
@@ -67,20 +67,21 @@ jobs:
         id: download-x86_64
         uses: actions/download-artifact@v4
         with:
-          name: ipupd-x86_64
+          name: ipupdate-x86_64
 
       - name: Download aarch64 binary artifact
         id: download-aarch64
         uses: actions/download-artifact@v4
         with:
-          name: ipupd-aarch64
+          name: ipupdate-aarch64
 
       - name: Create release with assets
         run: |
           gh release \
             --repo ${{ github.repository }} \
             create ${{ github.ref_name }} \
-            '${{ steps.download.outputs.download-x86_64-path }}/ipupd-x86_64#ipupd-${{ github.ref_name }}-x86_64-linux' \
-            '${{ steps.download.outputs.download-aarch64-path }}/ipupd-aarch64#ipupd-${{ github.ref_name }}-aarch64-linux'
+            --notes-from-tag
+            '${{ steps.download.outputs.download-x86_64-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
+            '${{ steps.download.outputs.download-aarch64-path }}/ipupdate-aarch64#ipupdate-${{ github.ref_name }}-aarch64-linux'
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}

@@ -62,13 +62,13 @@
               rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
             in
               rustPlatform.buildRustPackage {
-                pname = "ipupd";
+                pname = "ipupdate";
                 version = "0.3.0";
                 src = self;
                 cargoLock.lockFile = ./Cargo.lock;
               };
 
-          ipupd-x86_64 =
+          ipupdate-x86_64 =
             with import nixpkgs { localSystem = system; crossSystem = { system = "x86_64-unknown-linux-musl"; isStatic = true; }; };
             let
               toolchain =
@@ -77,13 +77,13 @@
               rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
             in
               rustPlatform.buildRustPackage {
-                pname = "ipupd";
+                pname = "ipupdate";
                 version = "0.3.0";
                 src = self;
                 cargoLock.lockFile = ./Cargo.lock;
               };
 
-          ipupd-aarch64 =
+          ipupdate-aarch64 =
             with import nixpkgs { localSystem = system; crossSystem = { system = "aarch64-unknown-linux-musl"; isStatic = true; }; };
             let
               toolchain =
@@ -92,7 +92,7 @@
               rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
             in
               rustPlatform.buildRustPackage {
-                pname = "ipupd";
+                pname = "ipupdate";
                 version = "0.3.0";
                 src = self;
                 cargoLock.lockFile = ./Cargo.lock;
