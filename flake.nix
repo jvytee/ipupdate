@@ -36,6 +36,7 @@
                     yaml-language-server
                     pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc
                     pkgsStatic.stdenv.cc
+                    gh
                   ];
 
                   CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER =
