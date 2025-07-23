@@ -1,0 +1,25 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+
+name: Run unit tests
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run unit tests in dev shell
+        run: |
+          nix develop
+          cargo test

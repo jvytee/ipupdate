@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
 
 name: Create release
 on:
@@ -7,37 +7,81 @@ on:
       - v*.*.*
 
 jobs:
-  build:
+  test:
+    name: Run unit tests
     runs-on: ubuntu-latest
     steps:
-      - name: Install nix
-        uses: cachix/install-nix-action@v22
-        with:
-          nix_path: nixpkgs=channel:nixos-23.05
-
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Build static binary
-        run: nix build .#static
-
-      - name: Upload binary artifact
-        uses: actions/upload-artifact@v3
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
         with:
-          name: ipupd-x86_64
-          path: ${{ github.workspace }}/result/bin/ipupd
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run unit tests in dev shell
+        run: |
+          nix develop
+          cargo test
+
+  build:
+    name: Build binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build static binary for x86_64
+        run: nix build .#ipupdate-x86_64
+
+      - name: Upload x86_64 binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipupdate-x86_64
+          path: ${{ github.workspace }}/result/bin/ipupdate
+          if-no-files-found: error
+
+      - name: Build static binary for aarch64
+        run: nix build .#ipupdate-aarch64
+
+      - name: Upload aarch64 binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ipupdate-aarch64
+          path: ${{ github.workspace }}/result/bin/ipupdate
+          if-no-files-found: error
 
   release:
+    name: Create release
     runs-on: ubuntu-latest
-    needs: build
+    needs:
+      - test
+      - build
     steps:
-      - name: Download binary artifact
-        id: download
-        uses: actions/download-artifact@v3
+      - name: Download x86_64 binary artifact
+        id: download-x86_64
+        uses: actions/download-artifact@v4
         with:
-          name: ipupd-x86_64
+          name: ipupdate-x86_64
 
-      - name: Create release
-        run: gh release --repo ${{ github.repository }} create ${{ github.ref_name }} '${{ steps.download.outputs.download-path }}/ipupd#ipupd-${{ github.ref_name }}-x86_64-linux'
+      - name: Download aarch64 binary artifact
+        id: download-aarch64
+        uses: actions/download-artifact@v4
+        with:
+          name: ipupdate-aarch64
+
+      - name: Create release with assets
+        run: |
+          gh release \
+            --repo ${{ github.repository }} \
+            create ${{ github.ref_name }} \
+            --notes-from-tag
+            '${{ steps.download.outputs.download-x86_64-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
+            '${{ steps.download.outputs.download-aarch64-path }}/ipupdate-aarch64#ipupdate-${{ github.ref_name }}-aarch64-linux'
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}

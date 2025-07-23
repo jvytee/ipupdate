@@ -1,4 +1,4 @@
-# ipupd
+# ipupdate
 Fetches current IP addresses of the machine and compares them with DNS records of a domain.
 If there is a difference, records are updated via configurable HTTP request to an API endpoint.
 
@@ -7,33 +7,33 @@ Since current IP addresses are read from the interface directly at the moment, t
 If no global address could be detected, it is subsituted by "0.0.0.0" or "::" respectively.
 
 ## Installation
-Building ipupd requires a recent version of cargo and a rust compiler toolchain.
+Building ipupdate requires a recent version of cargo and a rust compiler toolchain.
 The recommended way to install those is using [rustup](https://rustup.rs).
 Afterwards, a binary can be built from source quite easily:
 
-    git clone https://github.com/jvytee/ipupd.git
-    cargo install --path ipupd
+    git clone https://github.com/jvytee/ipupdate.git
+    cargo install --path ipupdate
     
-Alternatively, linux binaries may be downloaded from the [releases section](https://github.com/jvytee/ipupd/releases).
+Alternatively, linux binaries may be downloaded from the [releases section](https://github.com/jvytee/ipupdate/releases).
 
 ## Usage
 
-    Usage: ipupd [OPTIONS]
+    Usage: ipupdate [OPTIONS]
     
     Options:
         -h, --help          show help and exit
         -c, --config FILE   configuration file
 
-If no configuration file is given explicitely, ipupd will try to use `/etc/ipupd/config.toml`.
+If no configuration file is given explicitely, ipupdate will try to use `/etc/ipupdate/config.toml`.
 
 ### With SystemD
-In most cases, it makes sense to run ipupd in regular intervals to keep IP addresses up to date.
-For this reason, preconfigured SystemD units implementing a timer to call ipupd every 30 seconds can be found in `extra/systemd`.
-To use the SystemD timer, the ipupd binary needs to be installed in `/usr/local/bin` and service as well as timer files have to be present in `/etc/systemd/system`.
-Afterwards, `ipupd.timer` may be enabled/started like any regular SystemD service.
+In most cases, it makes sense to run ipupdate in regular intervals to keep IP addresses up to date.
+For this reason, preconfigured SystemD units implementing a timer to call ipupdate every 30 seconds can be found in `extra/systemd`.
+To use the SystemD timer, the ipupdate binary needs to be installed in `/usr/local/bin` and service as well as timer files have to be present in `/etc/systemd/system`.
+Afterwards, `ipupdate.timer` may be enabled/started like any regular SystemD service.
 
 ## Configuration
-By default, ipupd will try to read its configuration from `/etc/ipupd/config.toml`.
+By default, ipupdate will try to read its configuration from `/etc/ipupdate/config.toml`.
 Parameters are set in [TOML](https://toml.io/en/) format like below:
 
 ```toml

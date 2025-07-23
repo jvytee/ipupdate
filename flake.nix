@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
     fenix = {
       url = "github:nix-community/fenix";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -9,56 +9,95 @@
 
   outputs = { self, nixpkgs, fenix }:
     let
-      toolchain = system:
-        with fenix.packages.${system};
-        combine [
-          stable.cargo
-          stable.rustc
-        ];
-
-      devToolchain = system: fenix.packages.${system}.stable.toolchain;
-
-      rustPlatform = { pkgs, system }:
-        let fenixToolchain = toolchain system;
-        in pkgs.makeRustPlatform { cargo = fenixToolchain; rustc = fenixToolchain; };
-
-      ipupdDevShell = system:
+      eachSystem = nixpkgs.lib.genAttrs systems;
+      systems = [
+        "x86_64-linux"
+        "aarch64-linux"
+      ];
+      crossTargets = [
+        "aarch64-unknown-linux-musl"
+        "x86_64-unknown-linux-musl"
+      ];
+    in {
+      devShells = 
         let
-          pkgs = import nixpkgs { inherit system; };
-          fenixToolchain = devToolchain system;
-        in
-        pkgs.mkShell {
-          nativeBuildInputs = with pkgs; [
-            fenixToolchain
-            gh
-            yaml-language-server
-          ];
-        };
+          extraRustStds = system: targets: map (target: fenix.packages.${system}.targets.${target}.stable.rust-std) targets;
+          toolchain = system: targets:
+            with fenix.packages.${system}; combine ([
+              stable.toolchain
+            ] ++ (extraRustStds system targets));
+        in 
+          eachSystem (system:
+            {
+              default = 
+                with import nixpkgs { inherit system; }; mkShell {
+                  nativeBuildInputs = [
+                    (toolchain system crossTargets)
+                    yaml-language-server
+                    pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc
+                    pkgsStatic.stdenv.cc
+                    gh
+                  ];
 
-      ipupdPackage = system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-          fenixRustPlatform = rustPlatform { inherit pkgs system; };
-        in
-        fenixRustPlatform.buildRustPackage {
-          pname = "ipupd";
-          version = "0.3.0";
-          src = self;
+                  CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER =
+                    let cc = pkgsStatic.stdenv.cc;
+                    in "${cc}/bin/${cc.targetPrefix}cc";
+                  CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER =
+                    let cc = pkgsCross.aarch64-multiplatform-musl.pkgsStatic.stdenv.cc;
+                    in "${cc}/bin/${cc.targetPrefix}cc";
+                  # CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
+                  # TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
+                };
+            }
+          );
 
-          cargoLock.lockFile = ./Cargo.lock;
-        };
-    in
-    {
-      devShells = {
-        x86_64-linux.default = ipupdDevShell "x86_64-linux";
-        aarch64-linux.default = ipupdDevShell "aarch64-linux";
-      };
+      packages = eachSystem (system:
+        {
+          default =
+            with import nixpkgs { inherit system; };
+            let
+              toolchain =
+                with fenix.packages.${system};
+                combine [ stable.cargo stable.rustc ];
+              rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
+            in
+              rustPlatform.buildRustPackage {
+                pname = "ipupdate";
+                version = "0.3.0";
+                src = self;
+                cargoLock.lockFile = ./Cargo.lock;
+              };
 
-      formatter.x86_64-linux = nixpkgs.legacyPackages.x86_64-linux.nixpkgs-fmt;
+          ipupdate-x86_64 =
+            with import nixpkgs { localSystem = system; crossSystem = { system = "x86_64-unknown-linux-musl"; isStatic = true; }; };
+            let
+              toolchain =
+                with fenix.packages.${system};
+                combine [ stable.cargo stable.rustc targets.x86_64-unknown-linux-musl.stable.rust-std ];
+              rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
+            in
+              rustPlatform.buildRustPackage {
+                pname = "ipupdate";
+                version = "0.3.0";
+                src = self;
+                cargoLock.lockFile = ./Cargo.lock;
+              };
 
-      packages = {
-        x86_64-linux.default = ipupdPackage "x86_64-linux";
-        aarch64-linux.default = ipupdPackage "aarch64-linux";
-      };
+          ipupdate-aarch64 =
+            with import nixpkgs { localSystem = system; crossSystem = { system = "aarch64-unknown-linux-musl"; isStatic = true; }; };
+            let
+              toolchain =
+                with fenix.packages.${system};
+                combine [ stable.cargo stable.rustc targets.aarch64-unknown-linux-musl.stable.rust-std ];
+              rustPlatform = makeRustPlatform { cargo = toolchain; rustc = toolchain; };
+            in
+              rustPlatform.buildRustPackage {
+                pname = "ipupdate";
+                version = "0.3.0";
+                src = self;
+                cargoLock.lockFile = ./Cargo.lock;
+              };
+        }
+      );
     };
 }
