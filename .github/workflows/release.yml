@@ -78,7 +78,6 @@ jobs:
       - name: Create release with assets
         run: |
           gh release \
-            --repo ${{ github.repository }} \
             create ${{ github.ref_name }} \
             --notes-from-tag
             '${{ steps.download.outputs.download-x86_64-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
