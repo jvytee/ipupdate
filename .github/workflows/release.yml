@@ -66,24 +66,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download x86_64 binary artifact
-        id: download-x86_64
+      - name: Download binary artifacts
+        id: download
         uses: actions/download-artifact@v4
-        with:
-          name: ipupdate-x86_64
 
-      - name: Download aarch64 binary artifact
-        id: download-aarch64
-        uses: actions/download-artifact@v4
-        with:
-          name: ipupdate-aarch64
+      - name: Debug artifact download
+        run: ls -lh ${{ steps.download.outputs.download-path }}
 
       - name: Create release with assets
         run: |
           gh release \
             create ${{ github.ref_name }} \
             --notes-from-tag
-            '${{ steps.download-x86_64.outputs.download-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
-            '${{ steps.download-aarch64.outputs.download-path }}/ipupdate-aarch64#ipupdate-${{ github.ref_name }}-aarch64-linux'
+            '${{ steps.download.outputs.download-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
+            '${{ steps.download.outputs.download-path }}/ipupdate-aarch64#ipupdate-${{ github.ref_name }}-aarch64-linux'
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
