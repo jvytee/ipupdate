@@ -77,7 +77,7 @@ jobs:
         run: |
           gh release \
             create ${{ github.ref_name }} \
-            --notes-from-tag
+            --notes-from-tag \
             '${{ steps.download.outputs.download-path }}/ipupdate-x86_64#ipupdate-${{ github.ref_name }}-x86_64-linux' \
             '${{ steps.download.outputs.download-path }}/ipupdate-aarch64#ipupdate-${{ github.ref_name }}-aarch64-linux'
         env:
