@@ -19,7 +19,7 @@
         "x86_64-unknown-linux-musl"
       ];
     in {
-      devShells = 
+      devShells =
         let
           extraRustStds = system: targets: map (target: fenix.packages.${system}.targets.${target}.stable.rust-std) targets;
           toolchain = system: targets:
@@ -30,7 +30,8 @@
           eachSystem (system:
             {
               default = 
-                with import nixpkgs { inherit system; }; mkShell {
+                with import nixpkgs { inherit system; };
+                mkShell {
                   nativeBuildInputs = [
                     (toolchain system crossTargets)
                     yaml-language-server
@@ -47,6 +48,12 @@
                     in "${cc}/bin/${cc.targetPrefix}cc";
                   # CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
                   # TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
+                };
+
+              test =
+                with import nixpkgs { inherit system; };
+                mkShell {
+                  nativeBuildInputs = [ fenix.packages.${system}.stable.minimalToolchain ];
                 };
             }
           );

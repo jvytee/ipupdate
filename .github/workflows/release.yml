@@ -69,6 +69,8 @@ jobs:
       - name: Download binary artifacts
         id: download
         uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
 
       - name: Debug artifact download
         run: ls -lh ${{ steps.download.outputs.download-path }}
