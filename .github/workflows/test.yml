@@ -21,5 +21,5 @@ jobs:
 
       - name: Run unit tests in dev shell
         run: |
-          nix develop
+          nix develop .#test
           cargo test
