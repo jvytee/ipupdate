@@ -83,4 +83,4 @@ jobs:
             '${{ steps.download.outputs.download-path }}/ipupdate-x86_64/ipupdate#ipupdate-${{ github.ref_name }}-x86_64-linux' \
             '${{ steps.download.outputs.download-path }}/ipupdate-aarch64/ipupdate#ipupdate-${{ github.ref_name }}-aarch64-linux'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
