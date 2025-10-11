@@ -19,8 +19,12 @@
               mkShell {
                 nativeBuildInputs = [
                   cargo
+                  clippy
+                  gdb
                   gh
                   rust-analyzer
+                  rustc
+                  rustfmt
                   yaml-language-server
                 ];
 
