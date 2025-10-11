@@ -20,6 +20,7 @@
                 nativeBuildInputs = [
                   cargo
                   gh
+                  rust-analyzer
                   yaml-language-server
                 ];
 
