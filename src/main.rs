@@ -5,8 +5,11 @@ use anyhow::{Context, Result};
 use config::Config;
 use getopts::Options;
 use ipaddrs::IpAddrs;
+use reqwest::{
+    Error,
+    blocking::{Client, Request},
+};
 use std::{collections::HashSet, env, net::IpAddr, process};
-use ureq::Request;
 
 const DEFAULT_CONFIG: &str = "/etc/ipupdate/config.toml";
 
@@ -25,7 +28,7 @@ fn try_main() -> Result<()> {
     opts.optopt(
         "c",
         "config",
-        &format!("Configuration file (default: {})", DEFAULT_CONFIG),
+        &format!("Configuration file (default: {DEFAULT_CONFIG})"),
         "FILE",
     );
 
@@ -47,6 +50,7 @@ fn try_main() -> Result<()> {
     log::info!("Reading current IPv6 addresses of interface {interface}");
     let interface_ips = IpAddrs::from_interface(interface);
 
+    let client = Client::new();
     let ip_addrs = match &config.ipv4_url {
         Some(endpoint) => {
             log::info!("Requesting current IPv4 addresses from API {endpoint}");
@@ -69,13 +73,14 @@ fn try_main() -> Result<()> {
 
     if !ip_addrs.is_subset(&domain_ips) {
         log::info!("Updating IP addresses at {}", &config.dyndns_url);
-        let request = create_request(&config, &ip_addrs);
-        let response = request
-            .call()
+
+        let request =
+            create_request(&client, &config, &ip_addrs).context("Could not create request")?;
+        let response = client
+            .execute(request)
             .with_context(|| format!("Could not GET {}", &config.dyndns_url))?;
         let status = response.status();
-        let status_text = response.status_text().to_string();
-        log::info!("Got {status} {status_text}. Done.");
+        log::info!("Got status code {status}. Done.");
     } else {
         log::info!("IP adresses are up to date. Done.");
     }
@@ -83,7 +88,7 @@ fn try_main() -> Result<()> {
     Ok(())
 }
 
-fn create_request(config: &Config, ip_addrs: &IpAddrs) -> Request {
+fn create_request(client: &Client, config: &Config, ip_addrs: &IpAddrs) -> Result<Request, Error> {
     let ipv4 = ip_addrs
         .iter()
         .find(|ip_addr| ip_addr.is_ipv4())
@@ -96,15 +101,15 @@ fn create_request(config: &Config, ip_addrs: &IpAddrs) -> Request {
         .map(|ip_addr| ip_addr.to_string())
         .unwrap_or("::".to_string());
 
-    let request = ureq::get(&config.dyndns_url)
-        .query(&config.query.ipv4, &ipv4)
-        .query(&config.query.ipv6, &ipv6);
+    let mut request_builder = client
+        .get(&config.dyndns_url)
+        .query(&[(&config.query.ipv4, &ipv4), (&config.query.ipv6, &ipv6)]);
 
     if let Some(auth) = &config.basic_auth {
-        request.set("Authorization", &auth.to_header())
-    } else {
-        request
+        request_builder = request_builder.header("Authorization", &auth.to_header());
     }
+
+    request_builder.build()
 }
 
 #[cfg(test)]
@@ -113,6 +118,8 @@ mod tests {
         collections::HashSet,
         net::{IpAddr, Ipv4Addr, Ipv6Addr},
     };
+
+    use reqwest::blocking::Client;
 
     use crate::{
         config::{Config, Query},
@@ -126,7 +133,7 @@ mod tests {
             domain: "foobar.example".to_string(),
             interface: "eth0".to_string(),
             ipv4_url: None,
-            dyndns_url: "https://dyndns.example".to_string(),
+            dyndns_url: "https://dyndns.example/".to_string(),
             basic_auth: None,
             query: Query {
                 ipv4: "foo".to_string(),
@@ -134,8 +141,10 @@ mod tests {
             },
         };
 
-        let request = create_request(&config, ip_addrs);
-        assert_eq!(request.url(), url);
+        let client = Client::new();
+        let request = create_request(&client, &config, ip_addrs).expect("Could not create request");
+
+        assert_eq!(request.url().as_str(), url);
     }
 
     #[test]

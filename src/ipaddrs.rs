@@ -11,9 +11,9 @@ pub struct IpAddrs(pub HashSet<IpAddr>);
 
 impl IpAddrs {
     pub fn from_domain(domain_name: &str) -> Result<Self> {
-        let socket_addrs = format!("{}:443", domain_name)
+        let socket_addrs = format!("{domain_name}:443")
             .to_socket_addrs()
-            .with_context(|| format!("Could not resolve {}", domain_name))?;
+            .with_context(|| format!("Could not resolve {domain_name}"))?;
 
         Ok(Self(
             socket_addrs.map(|socket_addr| socket_addr.ip()).collect(),
@@ -33,12 +33,9 @@ impl IpAddrs {
     }
 
     pub fn from_api(endpoint: &str) -> Result<Self> {
-        let result = ureq::get(endpoint)
-            .call()
+        let result = reqwest::blocking::get(endpoint)
             .with_context(|| format!("Could not GET {endpoint}"))?;
-        let content = result
-            .into_string()
-            .context("Could not read response body")?;
+        let content = result.text().context("Could not read response body")?;
         let ip_addr: IpAddr = content
             .trim()
             .parse()
@@ -51,7 +48,7 @@ impl IpAddrs {
             IpAddr::V6(ipv6) => ipv6
                 .segments()
                 .first()
-                .map_or(false, |segment| 0x0000 < *segment && *segment < 0xf000),
+                .is_some_and(|segment| 0x0000 < *segment && *segment < 0xf000),
             IpAddr::V4(ipv4) => !(ipv4.is_loopback() || ipv4.is_private() || ipv4.is_link_local()),
         }
     }
