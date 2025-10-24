@@ -22,6 +22,8 @@
                   clippy
                   gdb
                   gh
+                  openssl
+                  pkg-config
                   rust-analyzer
                   rustc
                   rustfmt
@@ -36,6 +38,17 @@
                   in "${cc}/bin/${cc.targetPrefix}cc";
                 # CARGO_BUILD_RUSTFLAGS = [ "-C" "target-feature=+crt-static" ];
                 # TARGET_CC = "${CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER}";
+              };
+
+            test =
+              with import nixpkgs { inherit system; };
+              mkShell {
+                nativeBuildInputs = [
+                  cargo
+                  openssl
+                  pkg-config
+                  rustc
+                ];
               };
           }
         );
