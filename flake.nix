@@ -45,9 +45,12 @@
               mkShell {
                 nativeBuildInputs = [
                   cargo
-                  openssl
                   pkg-config
                   rustc
+                ];
+
+                buildInputs = [
+                    openssl
                 ];
               };
           }
@@ -62,6 +65,14 @@
               version = "0.3.0";
               src = self;
               cargoLock.lockFile = ./Cargo.lock;
+
+              nativeBuildInputs = [
+                pkg-config
+              ];
+
+              buildInputs = [
+                openssl
+              ];
             };
 
           ipupdate-x86_64 =
@@ -78,6 +89,14 @@
               version = "0.3.0";
               src = self;
               cargoLock.lockFile = ./Cargo.lock;
+
+              nativeBuildInputs = [
+                pkg-config
+              ];
+
+              buildInputs = [
+                openssl
+              ];
             };
 
           ipupdate-aarch64 =
@@ -94,6 +113,14 @@
               version = "0.3.0";
               src = self;
               cargoLock.lockFile = ./Cargo.lock;
+
+              nativeBuildInputs = [
+                pkg-config
+              ];
+
+              buildInputs = [
+                openssl
+              ];
             };
         }
       );
