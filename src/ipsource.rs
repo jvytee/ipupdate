@@ -26,16 +26,28 @@ impl<'a> Ipv4Source<std::io::Error> for DomainIpv4Source<'a> {
     }
 }
 
+#[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, net::Ipv4Addr};
 
     use crate::ipsource::{DomainIpv4Source, Ipv4Source};
 
     #[test]
     fn test_domain_ipv4_source() {
-        let source = DomainIpv4Source("example.org");
-        let ips: HashSet<_> = source.get_ipv4().expect("Failed to get IPv4 iterator").collect();
+        let domain = "dns.quad9.net";
+        let source = DomainIpv4Source(domain);
+        let ips: HashSet<_> = source.get_ipv4().expect("Failed to resolve {domain}").collect();
+        let quadnine = Ipv4Addr::new(9, 9, 9, 9);
 
-        assert!(!ips.is_empty())
+        assert!(ips.contains(&quadnine));
+    }
+
+    #[test]
+    fn test_invalid_domain_ipv4_source() {
+        let domain = "qwertzuiopü.local";
+        let source = DomainIpv4Source(domain);
+        let Err(_error) = source.get_ipv4() else {
+            panic!("Successfully resolved {domain}");
+        };
     }
 }
