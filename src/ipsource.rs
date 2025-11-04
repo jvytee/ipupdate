@@ -1,6 +1,9 @@
 use std::{
+    cell::RefCell,
+    collections::HashSet,
     error::Error,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs},
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs},
+    vec::IntoIter,
 };
 
 pub trait Ipv4Source<E: Error> {
@@ -12,15 +15,36 @@ pub trait Ipv6Source<E: Error> {
 }
 
 #[derive(Debug)]
-pub struct DomainIpv4Source<'a>(&'a str);
+pub struct DomainIpSource<'a> {
+    domain: &'a str,
+    socket_addrs: RefCell<HashSet<SocketAddr>>,
+}
 
-impl<'a> Ipv4Source<std::io::Error> for DomainIpv4Source<'a> {
+impl<'a> DomainIpSource<'a> {
+    pub fn new(domain: &'a str) -> Self {
+        Self {
+            domain,
+            socket_addrs: RefCell::new(HashSet::new()),
+        }
+    }
+}
+
+impl<'a> Ipv4Source<std::io::Error> for DomainIpSource<'a> {
     fn get_ipv4(&self) -> Result<impl Iterator<Item = Ipv4Addr>, std::io::Error> {
-        let socket_addrs = format!("{}:443", self.0).to_socket_addrs()?;
-        let ipv4addrs = socket_addrs.filter_map(|socket_addr| match socket_addr.ip() {
-            IpAddr::V4(addr) => Some(addr),
-            IpAddr::V6(_) => None,
-        });
+        if self.socket_addrs.borrow().is_empty() {
+            let socket_addrs = format!("{}:443", self.domain)
+                .to_socket_addrs()
+                .map(IntoIter::collect)?;
+            self.socket_addrs.replace(socket_addrs);
+        }
+
+        let socket_addrs = self.socket_addrs.borrow().clone();
+        let ipv4addrs = socket_addrs
+            .into_iter()
+            .filter_map(|socket_addr| match socket_addr.ip() {
+                IpAddr::V4(addr) => Some(addr),
+                IpAddr::V6(_) => None,
+            });
 
         Ok(ipv4addrs)
     }
@@ -30,22 +54,25 @@ impl<'a> Ipv4Source<std::io::Error> for DomainIpv4Source<'a> {
 mod tests {
     use std::{collections::HashSet, net::Ipv4Addr};
 
-    use crate::ipsource::{DomainIpv4Source, Ipv4Source};
+    use crate::ipsource::{DomainIpSource, Ipv4Source};
 
     #[test]
-    fn test_domain_ipv4_source() {
+    fn domain_ipv4_source() {
         let domain = "dns.quad9.net";
-        let source = DomainIpv4Source(domain);
-        let ips: HashSet<_> = source.get_ipv4().expect("Failed to resolve {domain}").collect();
+        let source = DomainIpSource::new(domain);
+        let ips: HashSet<_> = source
+            .get_ipv4()
+            .expect("Failed to resolve {domain}")
+            .collect();
         let quadnine = Ipv4Addr::new(9, 9, 9, 9);
 
         assert!(ips.contains(&quadnine));
     }
 
     #[test]
-    fn test_invalid_domain_ipv4_source() {
+    fn invalid_domain_ipv4_source() {
         let domain = "qwertzuiopü.local";
-        let source = DomainIpv4Source(domain);
+        let source = DomainIpSource::new(domain);
         let Err(_error) = source.get_ipv4() else {
             panic!("Successfully resolved {domain}");
         };
