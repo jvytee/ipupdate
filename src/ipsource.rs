@@ -82,20 +82,19 @@ mod tests {
 
     #[test]
     fn domain_ipv4_source() {
-        let domain = "dns.quad9.net";
+        let domain = "localhost";
         let source = DomainIpSource::new(domain);
         let ips: HashSet<_> = source
             .get_ipv4()
             .expect("Failed to resolve {domain}")
             .collect();
-        let quadnine = Ipv4Addr::new(9, 9, 9, 9);
 
-        assert!(ips.contains(&quadnine));
+        assert!(ips.contains(&Ipv4Addr::LOCALHOST));
     }
 
     #[test]
     fn invalid_domain_ipv4_source() {
-        let domain = "qwertzuiopü.local";
+        let domain = "invalidhost";
         let source = DomainIpSource::new(domain);
         let Err(_error) = source.get_ipv4() else {
             panic!("Successfully resolved {domain}");
@@ -104,20 +103,19 @@ mod tests {
 
     #[test]
     fn domain_ipv6_source() {
-        let domain = "dns.quad9.net";
+        let domain = "localhost";
         let source = DomainIpSource::new(domain);
         let ips: HashSet<_> = source
             .get_ipv6()
             .expect("Failed to resolve {domain}")
             .collect();
-        let quadnine = Ipv6Addr::from_str("2620:fe::fe").expect("Failed to create expecte IPv6 address");
 
-        assert!(ips.contains(&quadnine));
+        assert!(ips.contains(&Ipv6Addr::LOCALHOST));
     }
 
     #[test]
     fn invalid_domain_ipv6_source() {
-        let domain = "qwertzuiopü.local";
+        let domain = "invalidhost";
         let source = DomainIpSource::new(domain);
         let Err(_error) = source.get_ipv6() else {
             panic!("Successfully resolved {domain}");
