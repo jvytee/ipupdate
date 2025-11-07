@@ -1,4 +1,5 @@
 mod domain;
+mod interface;
 
 use std::{
     error::Error,
