@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashSet, convert::Infallible, net::IpAddr}
 
 use pnet::datalink;
 
-use crate::ipsource::Ipv4Source;
+use crate::ipsource::{Ipv4Source, Ipv6Source};
 
 pub struct InterfaceIpSource<'a> {
     name: &'a str,
@@ -67,5 +67,27 @@ impl<'a> Ipv4Source<Infallible> for InterfaceIpSource<'a> {
         });
 
         Ok(ipv4_addrs)
+    }
+}
+
+impl<'a> Ipv6Source<Infallible> for InterfaceIpSource<'a> {
+    fn get_ipv6(&self) -> Result<impl Iterator<Item = std::net::Ipv6Addr>, Infallible> {
+        if self.ip_addrs.borrow().is_empty() {
+            self.init();
+        }
+
+        let ip_addrs = self.ip_addrs.borrow().clone();
+        let ipv6_addrs = ip_addrs.into_iter().filter_map(|ip_addr| match ip_addr {
+            IpAddr::V4(_) => None,
+            IpAddr::V6(addr) => {
+                if Self::is_global(&ip_addr) {
+                    Some(addr)
+                } else {
+                    None
+                }
+            }
+        });
+
+        Ok(ipv6_addrs)
     }
 }
