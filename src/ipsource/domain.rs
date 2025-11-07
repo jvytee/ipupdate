@@ -10,22 +10,22 @@ use crate::ipsource::{Ipv4Source, Ipv6Source};
 #[derive(Debug)]
 pub struct DomainIpSource<'a> {
     domain: &'a str,
-    socket_addrs: RefCell<HashSet<SocketAddr>>,
+    ip_addrs: RefCell<HashSet<IpAddr>>,
 }
 
 impl<'a> DomainIpSource<'a> {
     pub fn new(domain: &'a str) -> Self {
         Self {
             domain,
-            socket_addrs: RefCell::new(HashSet::new()),
+            ip_addrs: RefCell::new(HashSet::new()),
         }
     }
 
     fn init(&self) -> Result<(), std::io::Error> {
         let socket_addrs = format!("{}:443", self.domain)
-            .to_socket_addrs()
-            .map(IntoIter::collect)?;
-        self.socket_addrs.replace(socket_addrs);
+            .to_socket_addrs()?;
+        let ip_addrs = socket_addrs.map(|socket_addr| socket_addr.ip()).collect();
+        self.ip_addrs.replace(ip_addrs);
 
         Ok(())
     }
@@ -33,14 +33,14 @@ impl<'a> DomainIpSource<'a> {
 
 impl<'a> Ipv4Source<std::io::Error> for DomainIpSource<'a> {
     fn get_ipv4(&self) -> Result<impl Iterator<Item = Ipv4Addr>, std::io::Error> {
-        if self.socket_addrs.borrow().is_empty() {
+        if self.ip_addrs.borrow().is_empty() {
             self.init()?;
         }
 
-        let socket_addrs = self.socket_addrs.borrow().clone();
-        let ipv4addrs = socket_addrs
+        let ip_addrs = self.ip_addrs.borrow().clone();
+        let ipv4addrs = ip_addrs
             .into_iter()
-            .filter_map(|socket_addr| match socket_addr.ip() {
+            .filter_map(|ip_addr| match ip_addr {
                 IpAddr::V4(addr) => Some(addr),
                 IpAddr::V6(_) => None,
             });
@@ -51,14 +51,14 @@ impl<'a> Ipv4Source<std::io::Error> for DomainIpSource<'a> {
 
 impl<'a> Ipv6Source<std::io::Error> for DomainIpSource<'a> {
     fn get_ipv6(&self) -> Result<impl Iterator<Item = Ipv6Addr>, std::io::Error> {
-        if self.socket_addrs.borrow().is_empty() {
+        if self.ip_addrs.borrow().is_empty() {
             self.init()?;
         }
 
-        let socket_addrs = self.socket_addrs.borrow().clone();
-        let ipv6addrs = socket_addrs
+        let ip_addrs = self.ip_addrs.borrow().clone();
+        let ipv6addrs = ip_addrs
             .into_iter()
-            .filter_map(|socket_addr| match socket_addr.ip() {
+            .filter_map(|ip_addr| match ip_addr {
                 IpAddr::V4(_) => None,
                 IpAddr::V6(addr) => Some(addr),
             });
