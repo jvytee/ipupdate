@@ -36,16 +36,6 @@ impl<'a> InterfaceIpSource<'a> {
             .collect();
         self.ip_addrs.replace(ip_addrs);
     }
-
-    fn is_global(ip_addr: &IpAddr) -> bool {
-        match ip_addr {
-            IpAddr::V6(ipv6) => ipv6
-                .segments()
-                .first()
-                .is_some_and(|segment| 0x0000 < *segment && *segment < 0xf000),
-            IpAddr::V4(ipv4) => !(ipv4.is_loopback() || ipv4.is_private() || ipv4.is_link_local()),
-        }
-    }
 }
 
 impl<'a> Ipv4Source<Infallible> for InterfaceIpSource<'a> {
@@ -56,13 +46,7 @@ impl<'a> Ipv4Source<Infallible> for InterfaceIpSource<'a> {
 
         let ip_addrs = self.ip_addrs.borrow().clone();
         let ipv4_addrs = ip_addrs.into_iter().filter_map(|ip_addr| match ip_addr {
-            IpAddr::V4(addr) => {
-                if Self::is_global(&ip_addr) {
-                    Some(addr)
-                } else {
-                    None
-                }
-            }
+            IpAddr::V4(addr) => Some(addr),
             IpAddr::V6(_) => None,
         });
 
@@ -79,15 +63,82 @@ impl<'a> Ipv6Source<Infallible> for InterfaceIpSource<'a> {
         let ip_addrs = self.ip_addrs.borrow().clone();
         let ipv6_addrs = ip_addrs.into_iter().filter_map(|ip_addr| match ip_addr {
             IpAddr::V4(_) => None,
-            IpAddr::V6(addr) => {
-                if Self::is_global(&ip_addr) {
-                    Some(addr)
-                } else {
-                    None
-                }
-            }
+            IpAddr::V6(addr) => Some(addr),
         });
 
         Ok(ipv6_addrs)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{
+        collections::HashSet,
+        net::{Ipv4Addr, Ipv6Addr},
+    };
+
+    use pnet::datalink;
+
+    use crate::ipsource::{Ipv4Source, Ipv6Source, interface::InterfaceIpSource};
+
+    fn get_loopback_name() -> Option<String> {
+        datalink::interfaces()
+            .into_iter()
+            .filter_map(|interface| {
+                if interface.is_loopback() {
+                    Some(interface.name)
+                } else {
+                    None
+                }
+            })
+            .next()
+    }
+
+    #[test]
+    fn interface_ipv4_source() {
+        let loopback = get_loopback_name().expect("No loopback interface found");
+        let source = InterfaceIpSource::new(&loopback);
+        let ips: HashSet<_> = source
+            .get_ipv4()
+            .expect("Infallible function failed")
+            .collect();
+
+        assert!(ips.contains(&Ipv4Addr::LOCALHOST));
+    }
+
+    #[test]
+    fn interface_ipv6_source() {
+        let loopback = get_loopback_name().expect("No loopback interface found");
+        let source = InterfaceIpSource::new(&loopback);
+        let ips: HashSet<_> = source
+            .get_ipv6()
+            .expect("Infallible function failed")
+            .collect();
+
+        assert!(ips.contains(&Ipv6Addr::LOCALHOST));
+    }
+
+    #[test]
+    fn invalid_interface_ipv4_source() {
+        let random = "foobar1337";
+        let source = InterfaceIpSource::new(random);
+        let ips: HashSet<_> = source
+            .get_ipv4()
+            .expect("Infallible function failed")
+            .collect();
+
+        assert!(ips.is_empty());
+    }
+
+    #[test]
+    fn invalid_interface_ipv6_source() {
+        let random = "foobar1337";
+        let source = InterfaceIpSource::new(random);
+        let ips: HashSet<_> = source
+            .get_ipv6()
+            .expect("Infallible function failed")
+            .collect();
+
+        assert!(ips.is_empty());
     }
 }

@@ -38,14 +38,14 @@ impl<'a> Ipv4Source<std::io::Error> for DomainIpSource<'a> {
         }
 
         let ip_addrs = self.ip_addrs.borrow().clone();
-        let ipv4addrs = ip_addrs
+        let ipv4_addrs = ip_addrs
             .into_iter()
             .filter_map(|ip_addr| match ip_addr {
                 IpAddr::V4(addr) => Some(addr),
                 IpAddr::V6(_) => None,
             });
 
-        Ok(ipv4addrs)
+        Ok(ipv4_addrs)
     }
 }
 
@@ -56,14 +56,14 @@ impl<'a> Ipv6Source<std::io::Error> for DomainIpSource<'a> {
         }
 
         let ip_addrs = self.ip_addrs.borrow().clone();
-        let ipv6addrs = ip_addrs
+        let ipv6_addrs = ip_addrs
             .into_iter()
             .filter_map(|ip_addr| match ip_addr {
                 IpAddr::V4(_) => None,
                 IpAddr::V6(addr) => Some(addr),
             });
 
-        Ok(ipv6addrs)
+        Ok(ipv6_addrs)
     }
 }
 
