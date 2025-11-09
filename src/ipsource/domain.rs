@@ -1,8 +1,7 @@
 use std::{
     cell::RefCell,
     collections::HashSet,
-    net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr, ToSocketAddrs},
-    vec::IntoIter,
+    net::{IpAddr, Ipv4Addr, Ipv6Addr, ToSocketAddrs},
 };
 
 use crate::ipsource::{Ipv4Source, Ipv6Source};
