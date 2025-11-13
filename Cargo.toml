@@ -1,6 +1,6 @@
 [package]
 name = "ipupdate"
-version = "0.3.0"
+version = "0.4.0"
 authors = ["jvytee <jvytee@posteo.org"]
 edition = "2024"
 
@@ -16,6 +16,7 @@ pnet = "0.35"
 reqwest = { version = "0.12", features = ["blocking", "rustls-tls"] }
 serde = { version = "1.0", features = ["derive"] }
 toml = "0.8"
+url = "2.5"
 
 [profile.release]
 strip = true
