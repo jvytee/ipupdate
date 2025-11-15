@@ -1,4 +1,5 @@
 mod config;
+mod dyndns;
 mod ipaddrs;
 mod ipsource;
 
